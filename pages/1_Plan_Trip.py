@@ -5,7 +5,7 @@ import math
 
 st.set_page_config(page_title="Plan Trip", page_icon="🧭")
 
-st.title("🧭 Smart Trip Planner")
+st.title("🧭 Smart Trip Planner (Dataset-based)")
 
 # ---- Load Dataset ----
 @st.cache_data
@@ -103,6 +103,9 @@ if st.button("Generate Plan ✨"):
             "Transport": transport_cost
         }
     }
+
+    # Reset expenses when new trip is planned (optional)
+    st.session_state["expenses"] = []
 
     # ---- Budget feedback ----
     if total_estimated > budget:
