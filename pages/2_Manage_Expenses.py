@@ -41,7 +41,7 @@ else:
             st.session_state["trip"]["actual_total"] = int(actual_total)
 
             st.success(f"Saved actuals. Actual total: ₹{actual_total:,}")
-            st.experimental_rerun()
+            st.rerun()
 
     # Option to clear actuals
     if "actuals" in trip and trip["actuals"]:
