@@ -2,5 +2,4 @@ streamlit
 pandas
 matplotlib
 passlib
-sqlite3-binary
 python-dotenv
