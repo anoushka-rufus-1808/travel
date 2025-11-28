@@ -55,4 +55,4 @@ if st.button("Create Trip"):
 
     st.session_state["trip"] = trip
     st.success(f"Trip created for {dest}. Estimated total: ₹{estimated_total:,}")
-    st.experimental_rerun()
+    #st.experimental_rerun()
