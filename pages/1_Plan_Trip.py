@@ -5,7 +5,7 @@ import math
 
 st.set_page_config(page_title="Plan Trip", page_icon="🧭")
 
-st.title("🧭 Smart Trip Planner (Dataset-based)")
+st.title("🧭 Smart Trip Planner")
 
 # ---- Load Dataset ----
 @st.cache_data
