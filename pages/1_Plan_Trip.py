@@ -11,13 +11,13 @@ def load_tour_data():
 
 df = load_tour_data()
 
-st.write("### Choose a destination from the dataset")
+st.write("### Choose a destination")
 dest = st.selectbox("Destination", df["Destination"].sort_values().unique())
 
 # Get row for selected destination
 row = df[df["Destination"] == dest].iloc[0]
 
-st.write("### Estimated costs (from dataset)")
+st.write("### Estimated costs")
 col1, col2 = st.columns(2)
 with col1:
     st.metric("Hotel (per person)", f"₹ {int(row['HotelCost']):,}")
