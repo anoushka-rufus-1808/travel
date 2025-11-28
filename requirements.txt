@@ -1,4 +1,5 @@
 streamlit
 pandas
 matplotlib
-bcrypt
+passlib
+sqlite3-binary
