@@ -1,116 +1,82 @@
+# pages/3_Dashboard.py
 import streamlit as st
+import pandas as pd
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Dashboard", page_icon="📊")
 
-st.title("📊 Dashboard")
+st.title("📊 Trip Dashboard")
 
-if "trip" in st.session_state:
-    trip = st.session_state["trip"]
-    st.success(f"📌 Current Trip: {trip['destination']}")
+# ---------- 1. Check trip in session_state ----------
+trip = st.session_state.get("trip", None)
 
-    # Summary metrics
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("🎯 Destination", trip["destination"])
-    with col2:
-        st.metric("💰 Estimated Cost", f"₹{trip['estimate']:,}")
-    with col3:
-        st.metric("🎒 Budget", f"₹{trip['budget']:,}")
+if trip is None:
+    st.warning("No trip data found. Please plan a trip first from the **Plan Trip** page.")
+    st.stop()
 
-    st.markdown("---")
+# Estimated total cost from Plan Trip
+estimated_total = trip.get("estimate", 0)
+breakdown = trip.get("breakdown", {})
 
-    # Detailed breakdown
-    st.subheader("🧾 Detailed Cost Breakdown (Estimated)")
-    breakdown = trip.get("breakdown", {})
-    for key, value in breakdown.items():
-        st.write(f"**{key}**: ₹{value:,}")
+st.subheader(f"Destination: {trip.get('destination', 'N/A')}")
+st.write(f"**Days:** {trip.get('days', 'N/A')} | **Travelers:** {trip.get('travelers', 'N/A')}")
 
-    # Show actuals if available
-    actuals = trip.get("actuals")
-    if actuals:
-        st.subheader("🧾 Actual Expenses (Saved)")
-        for key, value in actuals.items():
-            st.write(f"**{key}**: ₹{value:,}")
-    else:
-        st.info("No actual expenses saved yet. Add them in Manage Expenses.")
+# ---------- 2. Load / get expenses (actual) ----------
+expenses_data = st.session_state.get("expenses", None)
 
-    # Budget status
-    diff = trip["budget"] - trip["estimate"]
-    st.markdown("---")
-    if diff >= 0:
-        st.success(f"✅ Within Budget! You save ₹{diff:,}")
-    else:
-        st.error(f"⚠ Over Budget by ₹{-diff:,}")
-
-    # Progress: percent of budget estimated
-    used_pct = min(trip["estimate"] / max(trip["budget"], 1), 1.0)
-    st.write("### 🔢 Budget Usage (based on estimate)")
-    st.progress(used_pct)
-
-    st.markdown("---")
-
-    # Charts
-    st.subheader("📊 Estimated vs Actual Expenses")
-
-    categories = ["HotelCost", "FoodCost", "ActivitiesCost", "TransportCost"]
-    estimated = [breakdown.get(c, 0) for c in categories]
-
-    if actuals:
-        actual = [actuals.get(c, 0) for c in categories]
-    else:
-        # fallback: estimated + 10%
-        actual = [int(v * 1.10) for v in estimated]
-
-    # Bar chart
-    def show_bar_chart():
-        plt.figure(figsize=(8, 5))
-        x = range(len(categories))
-        labels = ["Hotel", "Food", "Activities", "Transport"]
-
-        plt.bar(x, estimated, width=0.4, label="Estimated")
-        plt.bar([p + 0.4 for p in x], actual, width=0.4, label="Actual")
-
-        plt.xlabel("Expense Categories")
-        plt.ylabel("Amount (₹)")
-        plt.title("Estimated vs Actual Trip Expenses")
-        plt.xticks([p + 0.2 for p in x], labels, rotation=0)
-        plt.legend()
-        plt.tight_layout()
-        st.pyplot(plt)
-
-    show_bar_chart()
-
-    st.markdown("---")
-
-    # Pie chart for estimated breakdown
-    st.subheader("🟠 Expense Distribution (Estimated)")
-    def show_pie_chart():
-        plt.figure(figsize=(5, 5))
-        labels = ["Hotel", "Food", "Activities", "Transport"]
-        sizes = estimated
-        # avoid zero-only pie error
-        if sum(sizes) == 0:
-            st.info("No estimated costs to show in pie chart.")
-            return
-        plt.pie(sizes, labels=labels, autopct="%1.1f%%", startangle=140)
-        plt.title("Estimated Cost Share")
-        plt.tight_layout()
-        st.pyplot(plt)
-
-    show_pie_chart()
-
-    st.markdown("---")
-
-    # Totals
-    est_total = sum(estimated)
-    act_total = sum(actual) if actual else None
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Estimated Total", f"₹ {est_total:,}")
-    with col2:
-        st.metric("Actual Total", f"₹ {act_total:,}" if act_total else "—")
-
+if expenses_data is None or len(expenses_data) == 0:
+    st.info("No expenses recorded yet. Add expenses from the **Manage Expenses** page to see actual cost charts.")
+    actual_total = 0
+    df_expenses = pd.DataFrame(columns=["Category", "Amount"])
 else:
-    st.info("Plan a trip to view dashboard info 🧭")
+    if isinstance(expenses_data, pd.DataFrame):
+        df_expenses = expenses_data.copy()
+    else:
+        df_expenses = pd.DataFrame(expenses_data)
+
+    if "Category" not in df_expenses.columns or "Amount" not in df_expenses.columns:
+        st.error("Expenses data is missing required columns `Category` and `Amount`.")
+        df_expenses = pd.DataFrame(columns=["Category", "Amount"])
+        actual_total = 0
+    else:
+        actual_total = df_expenses["Amount"].sum()
+
+# ---------- 3. Show key metrics ----------
+col1, col2 = st.columns(2)
+with col1:
+    st.metric("Estimated Total Cost", f"₹{estimated_total:,.0f}")
+with col2:
+    st.metric("Actual Total Spent", f"₹{actual_total:,.0f}")
+
+# ---------- 4. Estimated vs Actual – Bar Chart ----------
+st.subheader("Estimated vs Actual Total Cost")
+
+if estimated_total == 0 and actual_total == 0:
+    st.info("No data available yet to compare estimated vs actual costs.")
+else:
+    labels = ["Estimated", "Actual"]
+    values = [estimated_total, actual_total]
+
+    fig_bar, ax_bar = plt.subplots()
+    ax_bar.bar(labels, values)
+    ax_bar.set_ylabel("Amount (₹)")
+    ax_bar.set_title("Estimated vs Actual Total Cost")
+    st.pyplot(fig_bar)
+
+# ---------- 5. Pie Chart – Actual Expense Breakdown ----------
+st.subheader("Actual Expenses by Category")
+
+if df_expenses.empty:
+    st.info("No actual expenses recorded yet to show category-wise breakdown.")
+else:
+    cat_group = df_expenses.groupby("Category")["Amount"].sum()
+
+    fig_pie, ax_pie = plt.subplots()
+    ax_pie.pie(cat_group.values, labels=cat_group.index, autopct="%1.1f%%")
+    ax_pie.set_title("Actual Expense Breakdown by Category")
+    st.pyplot(fig_pie)
+
+# ---------- 6. Optional: show table of expenses ----------
+if not df_expenses.empty:
+    st.subheader("📄 Expense Details")
+    st.dataframe(df_expenses, use_container_width=True)
